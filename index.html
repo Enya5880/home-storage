@@ -108,7 +108,8 @@ function loadData(){
 var url="https://gitee.com/api/v5/repos/"+OWNER+"/"+REPO+"/contents/"+DATA_FILE+"?ref=master";
 fetch(url).then(function(r){return r.json()}).then(function(data){
 contentSha=data.sha;
-var content=atob(data.content);
+var bytes=atob(data.content);
+var content=decodeURIComponent(escape(bytes));
 items=JSON.parse(content).items||{};
 document.getElementById("content").innerHTML='<div class="tip">已加载'+Object.keys(items).length+'件物品，输入名称查询</div>';
 }).catch(function(){
