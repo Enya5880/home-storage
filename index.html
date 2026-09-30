@@ -188,19 +188,56 @@ document.getElementById("voiceBtn").textContent="正在听…";
 }
 }
 
+var SYNONYMS={
+"纸巾":["餐巾纸","抽纸","面巾纸","卫生纸","卷纸","面纸","擦纸"],
+"湿巾":["湿纸巾","婴儿湿巾","手口湿巾"],
+"棉柔巾":["棉柔纸","柔纸巾","干湿两用巾"],
+"尿不湿":["纸尿裤","纸尿片","尿裤","拉拉裤","尿片","nappy"],
+"婴儿纸巾":["婴儿纸","宝宝纸巾","儿童纸巾"],
+"指甲钳":["指甲刀","指甲剪","指甲套装"],
+"健身架":["婴儿健身架","脚踏架","活动架","钢琴架"],
+"睡袋":["露营睡袋","宝宝睡袋","儿童睡袋"],
+"辅食碗":["宝宝碗","婴儿碗","儿童碗"],
+"创可贴":["创口贴","胶布","止血贴","band-aid"],
+"温度计":["体温计","测温计","体温枪","额温枪"],
+"奶瓶":["奶嘴","奶杯","婴儿奶瓶"],
+"毛巾":["浴巾","面巾","手巾","擦身巾"],
+"袜子":["婴儿袜","宝宝袜","儿童袜","丝袜"],
+"衣服":["婴儿服","宝宝衣服","儿童服","连体衣","和尚服"],
+"枕头":["婴儿枕","宝宝枕","儿童枕","乳胶枕"],
+"被子":["婴儿被","宝宝被","棉被","毯子","小被子"],
+"玩具":["积木","拼图","娃娃","玩偶","益智玩具"],
+"药":["药品","药物","常备药","感冒药","退烧药"]
+};
+function expandQuery(q){
+q=q.toLowerCase();
+var keys=[q];
+for(var main in SYNONYMS){
+var syns=SYNONYMS[main];
+if(main.toLowerCase()===q||syns.some(function(s){return s.toLowerCase()===q;})){
+keys.push(main.toLowerCase());
+syns.forEach(function(s){keys.push(s.toLowerCase());});
+}
+}
+return keys;
+}
+
 function search(){
 var q=searchBox.value.trim().toLowerCase();
 var c=document.getElementById("content");
 if(!q){c.innerHTML='<div class="tip">输入物品名称查询</div>';return;}
+var qKeys=expandQuery(q);
 var results=[];
 for(var name in items){
 var info=items[name];
 var locs=info.locations||[];
 var aliases=info.aliases||[];
 var note=info.note||"";
-var fields=[name].concat(aliases,locs,[note]);
-if(fields.some(function(x){return String(x).toLowerCase().indexOf(q)>=0;}))
-results.push({name:name,locations:locs,note:note});
+var fields=[name].concat(aliases,locs,[note]).map(function(x){return String(x).toLowerCase();});
+var matched=qKeys.some(function(qk){
+return fields.some(function(f){return f.indexOf(qk)>=0;});
+});
+if(matched)results.push({name:name,locations:locs,note:note});
 }
 if(results.length===0){c.innerHTML='<div class="no-result">没有找到「'+searchBox.value+'」<br>家里可能还没登记哦</div>';return;}
 var html='<div class="result-count">找到'+results.length+'件：</div>';
