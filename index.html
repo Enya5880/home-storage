@@ -38,6 +38,16 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .voice-hint{text-align:center;color:#e74c3c;font-size:14px;margin-top:8px}
 .hidden{display:none}
 .loading{text-align:center;color:#999;padding:20px;font-size:14px}
+.loc-group{margin:0 16px 16px}
+.loc-group-title{font-size:15px;font-weight:600;color:#357abd;margin-bottom:8px;padding-left:4px}
+.loc-tag-row{display:flex;flex-wrap:wrap;gap:8px}
+.loc-tag{background:#fff;border:1px solid #d6e4f0;border-radius:18px;padding:8px 14px;font-size:14px;color:#4a90d9;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.loc-tag:active{background:#4a90d9;color:#fff}
+.loc-tag .count{background:#eef4fb;color:#4a90d9;border-radius:10px;padding:1px 8px;font-size:12px;margin-left:4px}
+.loc-detail{margin:8px 16px 16px;background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid #27ae60}
+.loc-detail h3{font-size:16px;color:#27ae60;margin-bottom:8px}
+.loc-detail .item-line{font-size:15px;line-height:1.9;color:#333}
+.loc-detail .close-btn{text-align:center;color:#999;font-size:13px;margin-top:10px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -48,6 +58,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 <div class="tabs">
 <div class="tab active" id="tab-search" onclick="switchTab('search')">查询</div>
 <div class="tab inactive" id="tab-add" onclick="switchTab('add')">添加</div>
+<div class="tab inactive" id="tab-browse" onclick="switchTab('browse')">分类</div>
 </div>
 
 <div id="search-panel">
@@ -96,6 +107,13 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 </div>
 </div>
 
+<div id="browse-panel" class="hidden">
+<div class="content" id="browseContent">
+<div class="loading">数据加载中…</div>
+</div>
+<div id="locDetail"></div>
+</div>
+
 <script>
 var TOKEN="2b10170c9c9a6c9866cc6f0e89ab9581";
 var OWNER="enya5880";
@@ -112,6 +130,7 @@ var bytes=atob(data.content);
 var content=decodeURIComponent(escape(bytes));
 items=JSON.parse(content).items||{};
 document.getElementById("content").innerHTML='<div class="tip">已加载'+Object.keys(items).length+'件物品，输入名称查询</div>';
+renderBrowse();
 }).catch(function(){
 document.getElementById("content").innerHTML='<div class="tip">数据加载中…如长时间无响应请刷新</div>';
 });
@@ -129,14 +148,95 @@ function switchTab(tab){
 if(tab==="search"){
 document.getElementById("search-panel").classList.remove("hidden");
 document.getElementById("add-panel").classList.add("hidden");
+document.getElementById("browse-panel").classList.add("hidden");
 document.getElementById("tab-search").className="tab active";
 document.getElementById("tab-add").className="tab inactive";
-}else{
+document.getElementById("tab-browse").className="tab inactive";
+document.getElementById("locDetail").innerHTML="";
+}else if(tab==="add"){
 document.getElementById("search-panel").classList.add("hidden");
 document.getElementById("add-panel").classList.remove("hidden");
+document.getElementById("browse-panel").classList.add("hidden");
 document.getElementById("tab-search").className="tab inactive";
 document.getElementById("tab-add").className="tab active";
+document.getElementById("tab-browse").className="tab inactive";
+document.getElementById("locDetail").innerHTML="";
+}else{
+document.getElementById("search-panel").classList.add("hidden");
+document.getElementById("add-panel").classList.add("hidden");
+document.getElementById("browse-panel").classList.remove("hidden");
+document.getElementById("tab-search").className="tab inactive";
+document.getElementById("tab-add").className="tab inactive";
+document.getElementById("tab-browse").className="tab active";
+renderBrowse();
 }
+}
+
+var LOC_GROUPS={
+"客厅柜子":["客厅·柜1·第1层","客厅·柜1·第2层","客厅·柜1·第3层","客厅·柜2·第1层","客厅·柜2·第2层","客厅·柜2·第3层","客厅·柜3·第1层","客厅·柜3·第2层","客厅·柜3·第3层"],
+"餐边柜":["餐边柜·抽屉1","餐边柜·抽屉2","餐边柜·抽屉3","餐边柜·吊柜1","餐边柜·吊柜2","餐边柜·敞开区·上层","餐边柜·敞开区·下层"]
+};
+var LOC_NAMES={
+"客厅·柜1·第1层":"柜1 第1层","客厅·柜1·第2层":"柜1 第2层","客厅·柜1·第3层":"柜1 第3层",
+"客厅·柜2·第1层":"柜2 第1层","客厅·柜2·第2层":"柜2 第2层","客厅·柜2·第3层":"柜2 第3层",
+"客厅·柜3·第1层":"柜3 第1层","客厅·柜3·第2层":"柜3 第2层","客厅·柜3·第3层":"柜3 第3层",
+"餐边柜·抽屉1":"抽屉1","餐边柜·抽屉2":"抽屉2","餐边柜·抽屉3":"抽屉3",
+"餐边柜·吊柜1":"吊柜1(左)","餐边柜·吊柜2":"吊柜2(右)",
+"餐边柜·敞开区·上层":"敞开区上层","餐边柜·敞开区·下层":"敞开区下层"
+};
+
+function countItemsAt(loc){
+var n=0;
+for(var name in items){
+if((items[name].locations||[]).indexOf(loc)>=0)n++;
+}
+return n;
+}
+
+function renderBrowse(){
+var c=document.getElementById("browseContent");
+var hasItems=Object.keys(items).length>0;
+if(!hasItems){c.innerHTML='<div class="tip">还没有登记物品</div>';return;}
+var html="";
+for(var groupName in LOC_GROUPS){
+html+='<div class="loc-group">';
+html+='<div class="loc-group-title">'+groupName+'</div>';
+html+='<div class="loc-tag-row">';
+LOC_GROUPS[groupName].forEach(function(loc){
+var n=countItemsAt(loc);
+html+='<div class="loc-tag" onclick="showLocDetail(\''+loc+'\')">'+LOC_NAMES[loc]+(n>0?'<span class="count">'+n+'</span>':'')+'</div>';
+});
+html+='</div>';
+html+='</div>';
+}
+html+='<div class="tip" style="padding:12px 0 30px;font-size:13px">点击位置标签查看里面的物品</div>';
+c.innerHTML=html;
+}
+
+function showLocDetail(loc){
+var d=document.getElementById("locDetail");
+var names=[];
+for(var name in items){
+if((items[name].locations||[]).indexOf(loc)>=0){
+var note=items[name].note?"（"+items[name].note+"）":"";
+names.push(name+note);
+}
+}
+var html='<div class="loc-detail">';
+html+='<h3>📍 '+(LOC_NAMES[loc]||loc)+' 里有 '+names.length+' 件：</h3>';
+if(names.length===0){
+html+='<div class="item-line" style="color:#999">这个位置还没放东西哦</div>';
+}else{
+names.forEach(function(n){html+='<div class="item-line">• '+n+'</div>';});
+}
+html+='<div class="close-btn" onclick="closeLocDetail()">收起 ▲</div>';
+html+='</div>';
+d.innerHTML=html;
+d.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function closeLocDetail(){
+document.getElementById("locDetail").innerHTML="";
 }
 
 var searchBox=document.getElementById("q");
