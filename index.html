@@ -54,6 +54,9 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .item-detail h3{font-size:16px;color:#357abd;margin-bottom:8px}
 .item-detail .item-line{font-size:15px;line-height:1.9;color:#333}
 .item-detail .close-btn{text-align:center;color:#999;font-size:13px;margin-top:10px;cursor:pointer}
+.loc-photo{width:100%;max-width:320px;border-radius:10px;margin:8px 0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.photo-placeholder{font-size:13px;color:#bbb;margin:6px 0}
+.search-thumb{width:48px;height:48px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-left:8px}
 </style>
 </head>
 <body>
@@ -134,8 +137,11 @@ var TOKEN="2b10170c9c9a6c9866cc6f0e89ab9581";
 var OWNER="enya5880";
 var REPO="home-storage";
 var DATA_FILE="inventory.json";
+var PHOTO_FILE="photos.json";
 var items={};
 var contentSha="";
+var photos={};
+var photoSha="";
 
 function loadData(){
 var url="https://gitee.com/api/v5/repos/"+OWNER+"/"+REPO+"/contents/"+DATA_FILE+"?ref=master";
@@ -148,6 +154,18 @@ renderAllItems();
 renderBrowse();
 }).catch(function(){
 document.getElementById("content").innerHTML='<div class="tip">数据加载中…如长时间无响应请刷新</div>';
+});
+loadPhotos();
+}
+function loadPhotos(){
+var url="https://gitee.com/api/v5/repos/"+OWNER+"/"+REPO+"/contents/"+PHOTO_FILE+"?ref=master";
+fetch(url).then(function(r){return r.json()}).then(function(data){
+photoSha=data.sha;
+var bytes=atob(data.content);
+var content=decodeURIComponent(escape(bytes));
+photos=JSON.parse(content)||{};
+}).catch(function(){
+photos={};
 });
 }
 
@@ -242,6 +260,9 @@ names.push(name+note);
 }
 var html='<div class="loc-detail">';
 html+='<h3>📍 '+(LOC_NAMES[loc]||loc)+' 里有 '+names.length+' 件：</h3>';
+if(photos[loc]){
+html+='<img class="loc-photo" src="'+photos[loc]+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';
+}
 if(names.length===0){
 html+='<div class="item-line" style="color:#999">这个位置还没放东西哦</div>';
 }else{
@@ -363,7 +384,14 @@ html+='<h3>📦 '+name+' 在这里：</h3>';
 if(locs.length===0){
 html+='<div class="item-line" style="color:#999">还没登记位置</div>';
 }else{
-locs.forEach(function(l){html+='<div class="item-line">📍 <b>'+(LOC_NAMES[l]||l)+'</b></div>';});
+locs.forEach(function(l){
+html+='<div class="item-line">📍 <b>'+(LOC_NAMES[l]||l)+'</b></div>';
+if(photos[l]){
+html+='<img class="loc-photo" src="'+photos[l]+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';
+}else{
+html+='<div class="photo-placeholder">（暂无位置照片）</div>';
+}
+});
 }
 if(info.note)html+='<div class="item-line" style="color:#999;font-size:13px">备注：'+info.note+'</div>';
 html+='<div class="close-btn" onclick="closeItemDetail()">收起 ▲</div>';
@@ -398,7 +426,11 @@ if(results.length===0){c.innerHTML='<div class="no-result">没有找到「'+sear
 var html='<div class="result-count">找到'+results.length+'件：</div>';
 results.forEach(function(item){
 var ls=item.locations.map(function(l){return"<b>"+(LOC_NAMES[l]||l)+"</b>"}).join("；");
-html+='<div class="card"><div class="name">'+item.name+'</div><div class="loc">📍 '+ls+'</div>'+(item.note?'<div class="note">备注：'+item.note+'</div>':"")+'</div>';
+var thumb="";
+if(item.locations.length>0&&photos[item.locations[0]]){
+thumb='<img class="search-thumb" src="'+photos[item.locations[0]]+'" alt="照片">';
+}
+html+='<div class="card"><div class="name">'+item.name+thumb+'</div><div class="loc">📍 '+ls+'</div>'+(item.note?'<div class="note">备注：'+item.note+'</div>':"")+'</div>';
 });
 c.innerHTML=html;
 }
