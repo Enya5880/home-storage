@@ -387,7 +387,7 @@ if(matched)results.push({name:name,locations:locs,note:note});
 if(results.length===0){c.innerHTML='<div class="no-result">没有找到「'+searchBox.value+'」<br>家里可能还没登记哦</div>';return;}
 var html='<div class="result-count">找到'+results.length+'件：</div>';
 results.forEach(function(item){
-var ls=item.locations.map(function(l){return"<b>"+l+"</b>"}).join("；");
+var ls=item.locations.map(function(l){return"<b>"+(LOC_NAMES[l]||l)+"</b>"}).join("；");
 html+='<div class="card"><div class="name">'+item.name+'</div><div class="loc">📍 '+ls+'</div>'+(item.note?'<div class="note">备注：'+item.note+'</div>':"")+'</div>';
 });
 c.innerHTML=html;
