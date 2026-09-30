@@ -48,6 +48,12 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 .loc-detail h3{font-size:16px;color:#27ae60;margin-bottom:8px}
 .loc-detail .item-line{font-size:15px;line-height:1.9;color:#333}
 .loc-detail .close-btn{text-align:center;color:#999;font-size:13px;margin-top:10px;cursor:pointer}
+.item-tag{background:#fff;border:1px solid #d6f0dc;border-radius:18px;padding:8px 14px;font-size:14px;color:#27ae60;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.item-tag:active{background:#27ae60;color:#fff}
+.item-detail{margin:8px 0 16px;background:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid #4a90d9}
+.item-detail h3{font-size:16px;color:#357abd;margin-bottom:8px}
+.item-detail .item-line{font-size:15px;line-height:1.9;color:#333}
+.item-detail .close-btn{text-align:center;color:#999;font-size:13px;margin-top:10px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -58,7 +64,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 <div class="tabs">
 <div class="tab active" id="tab-search" onclick="switchTab('search')">查询</div>
 <div class="tab inactive" id="tab-add" onclick="switchTab('add')">添加</div>
-<div class="tab inactive" id="tab-browse" onclick="switchTab('browse')">分类</div>
+<div class="tab inactive" id="tab-browse" onclick="switchTab('browse')">按区查询</div>
 </div>
 
 <div id="search-panel">
@@ -71,6 +77,7 @@ body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;backgr
 <div class="content" id="content">
 <div class="loading">数据加载中…</div>
 </div>
+<div id="itemDetail"></div>
 </div>
 
 <div id="add-panel" class="hidden">
@@ -129,7 +136,7 @@ contentSha=data.sha;
 var bytes=atob(data.content);
 var content=decodeURIComponent(escape(bytes));
 items=JSON.parse(content).items||{};
-document.getElementById("content").innerHTML='<div class="tip">已加载'+Object.keys(items).length+'件物品，输入名称查询</div>';
+renderAllItems();
 renderBrowse();
 }).catch(function(){
 document.getElementById("content").innerHTML='<div class="tip">数据加载中…如长时间无响应请刷新</div>';
@@ -153,6 +160,7 @@ document.getElementById("tab-search").className="tab active";
 document.getElementById("tab-add").className="tab inactive";
 document.getElementById("tab-browse").className="tab inactive";
 document.getElementById("locDetail").innerHTML="";
+renderAllItems();
 }else if(tab==="add"){
 document.getElementById("search-panel").classList.add("hidden");
 document.getElementById("add-panel").classList.remove("hidden");
@@ -322,10 +330,47 @@ syns.forEach(function(s){keys.push(s.toLowerCase());});
 return keys;
 }
 
+function renderAllItems(){
+var c=document.getElementById("content");
+var names=Object.keys(items);
+if(names.length===0){c.innerHTML='<div class="tip">还没有登记物品</div>';return;}
+var html='<div class="tip" style="padding:0 0 12px">共'+names.length+'件物品，点击物品看位置</div>';
+html+='<div class="loc-tag-row">';
+names.forEach(function(name){
+html+='<div class="item-tag" onclick="showItemDetail(decodeURIComponent(\''+encodeURIComponent(name)+'\'))">'+name+'</div>';
+});
+html+='</div>';
+c.innerHTML=html;
+}
+
+function showItemDetail(encName){
+var name=decodeURIComponent(encName);
+var info=items[name]||{};
+var locs=info.locations||[];
+var d=document.getElementById("itemDetail");
+var html='<div class="item-detail">';
+html+='<h3>📦 '+name+' 在这里：</h3>';
+if(locs.length===0){
+html+='<div class="item-line" style="color:#999">还没登记位置</div>';
+}else{
+locs.forEach(function(l){html+='<div class="item-line">📍 <b>'+(LOC_NAMES[l]||l)+'</b></div>';});
+}
+if(info.note)html+='<div class="item-line" style="color:#999;font-size:13px">备注：'+info.note+'</div>';
+html+='<div class="close-btn" onclick="closeItemDetail()">收起 ▲</div>';
+html+='</div>';
+d.innerHTML=html;
+d.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function closeItemDetail(){
+document.getElementById("itemDetail").innerHTML="";
+}
+
 function search(){
 var q=searchBox.value.trim().toLowerCase();
 var c=document.getElementById("content");
-if(!q){c.innerHTML='<div class="tip">输入物品名称查询</div>';return;}
+document.getElementById("itemDetail").innerHTML="";
+if(!q){renderAllItems();return;}
 var qKeys=expandQuery(q);
 var results=[];
 for(var name in items){
