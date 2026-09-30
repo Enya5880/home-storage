@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>家庭收纳查询</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6fa;min-height:100vh;color:#333}
+.header{background:linear-gradient(135deg,#4a90d9,#357abd);color:#fff;padding:24px 20px 40px;text-align:center}
+.header h1{font-size:22px;font-weight:600}
+.header p{font-size:13px;opacity:.9;margin-top:6px}
+.search-box{margin:-25px 16px 0;background:#fff;border-radius:14px;box-shadow:0 6px 20px rgba(0,0,0,.08);padding:14px;display:flex;gap:10px;align-items:center}
+.search-box input{flex:1;border:none;outline:none;font-size:16px;padding:10px 12px;background:#f2f4f8;border-radius:10px}
+.btn{border:none;background:#4a90d9;color:#fff;font-size:15px;padding:10px 18px;border-radius:10px;cursor:pointer;white-space:nowrap}
+.btn:active{opacity:.8}
+.btn:disabled{opacity:.5}
+.voice-btn{border:2px solid #4a90d9;background:#fff;color:#4a90d9;font-size:15px;padding:8px 14px;border-radius:10px;cursor:pointer}
+.voice-btn.recording{background:#e74c3c;color:#fff;border-color:#e74c3c;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.content{padding:20px 16px}
+.tip{text-align:center;color:#999;font-size:14px;padding:40px 0}
+.result-count{font-size:14px;color:#666;margin-bottom:12px}
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05);border-left:4px solid #4a90d9}
+.card .name{font-size:17px;font-weight:600}
+.card .loc{font-size:14px;color:#555;margin-top:6px;line-height:1.6}
+.card .loc b{color:#357abd}
+.card .note{font-size:12px;color:#999;margin-top:4px}
+.no-result{text-align:center;color:#bbb;font-size:14px;padding:30px 0}
+.tabs{display:flex;margin:0 16px;gap:8px;margin-top:16px}
+.tab{flex:1;text-align:center;padding:10px;border-radius:10px;font-size:15px;cursor:pointer}
+.tab.active{background:#4a90d9;color:#fff}
+.tab.inactive{background:#e0e0e0;color:#666}
+.add-form{margin:0 16px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+.add-form label{font-size:14px;color:#666;display:block;margin-bottom:4px}
+.add-form input,.add-form select{width:100%;border:1px solid #ddd;border-radius:8px;padding:10px;font-size:15px;margin-bottom:12px}
+.add-form button{width:100%}
+.voice-hint{text-align:center;color:#e74c3c;font-size:14px;margin-top:8px}
+.hidden{display:none}
+.loading{text-align:center;color:#999;padding:20px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>家庭收纳查询</h1>
+<p>搜索或添加物品位置</p>
+</div>
+<div class="tabs">
+<div class="tab active" id="tab-search" onclick="switchTab('search')">查询</div>
+<div class="tab inactive" id="tab-add" onclick="switchTab('add')">添加</div>
+</div>
+
+<div id="search-panel">
+<div class="search-box">
+<input id="q" type="search" placeholder="比如：纸巾、尿不湿…" autocomplete="off">
+<button class="btn" onclick="search()">查询</button>
+<button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">说话</button>
+</div>
+<div id="voiceHint"></div>
+<div class="content" id="content">
+<div class="loading">数据加载中…</div>
+</div>
+</div>
+
+<div id="add-panel" class="hidden">
+<div class="add-form">
+<label>物品名称</label>
+<input id="addName" type="text" placeholder="比如：创可贴">
+<label>存放位置</label>
+<select id="addLoc">
+<optgroup label="客厅柜子">
+<option value="客厅·柜1·第1层">柜1 第1层</option>
+<option value="客厅·柜1·第2层">柜1 第2层</option>
+<option value="客厅·柜1·第3层">柜1 第3层</option>
+<option value="客厅·柜2·第1层">柜2 第1层</option>
+<option value="客厅·柜2·第2层">柜2 第2层</option>
+<option value="客厅·柜2·第3层">柜2 第3层</option>
+<option value="客厅·柜3·第1层">柜3 第1层</option>
+<option value="客厅·柜3·第2层">柜3 第2层</option>
+<option value="客厅·柜3·第3层">柜3 第3层</option>
+</optgroup>
+<optgroup label="餐边柜">
+<option value="餐边柜·抽屉1">抽屉1</option>
+<option value="餐边柜·抽屉2">抽屉2</option>
+<option value="餐边柜·抽屉3">抽屉3</option>
+<option value="餐边柜·吊柜1">吊柜1(左)</option>
+<option value="餐边柜·吊柜2">吊柜2(右)</option>
+<option value="餐边柜·敞开区·上层">敞开区上层</option>
+<option value="餐边柜·敞开区·下层">敞开区下层</option>
+</optgroup>
+</select>
+<label>备注（可选）</label>
+<input id="addNote" type="text" placeholder="比如：常用款">
+<button class="btn" onclick="addItem()" id="addBtn">添加</button>
+<div id="addMsg" style="margin-top:8px;text-align:center;font-size:14px"></div>
+</div>
+</div>
+
+<script>
+var TOKEN="2b10170c9c9a6c9866cc6f0e89ab9581";
+var OWNER="enya5880";
+var REPO="home-storage";
+var DATA_FILE="inventory.json";
+var items={};
+var contentSha="";
+
+function loadData(){
+var url="https://gitee.com/api/v5/repos/"+OWNER+"/"+REPO+"/contents/"+DATA_FILE+"?ref=master";
+fetch(url).then(function(r){return r.json()}).then(function(data){
+contentSha=data.sha;
+var content=atob(data.content);
+items=JSON.parse(content).items||{};
+document.getElementById("content").innerHTML='<div class="tip">已加载'+Object.keys(items).length+'件物品，输入名称查询</div>';
+}).catch(function(){
+document.getElementById("content").innerHTML='<div class="tip">数据加载中…如长时间无响应请刷新</div>';
+});
+}
+
+function saveData(newData){
+var url="https://gitee.com/api/v5/repos/"+OWNER+"/"+REPO+"/contents/"+DATA_FILE;
+var contentStr=JSON.stringify(newData,null,2);
+var encoded=btoa(unescape(encodeURIComponent(contentStr)));
+var body=JSON.stringify({access_token:TOKEN,content:encoded,sha:contentSha,message:"update"});
+return fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:body}).then(function(r){return r.json()}).then(function(data){contentSha=data.content.sha;return data;});
+}
+
+function switchTab(tab){
+if(tab==="search"){
+document.getElementById("search-panel").classList.remove("hidden");
+document.getElementById("add-panel").classList.add("hidden");
+document.getElementById("tab-search").className="tab active";
+document.getElementById("tab-add").className="tab inactive";
+}else{
+document.getElementById("search-panel").classList.add("hidden");
+document.getElementById("add-panel").classList.remove("hidden");
+document.getElementById("tab-search").className="tab inactive";
+document.getElementById("tab-add").className="tab active";
+}
+}
+
+var searchBox=document.getElementById("q");
+searchBox.addEventListener("keydown",function(e){if(e.key==="Enter")search()});
+
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var recognition=null,isRecording=false;
+if(SR){
+recognition=new SR();
+recognition.lang="zh-CN";
+recognition.continuous=false;
+recognition.interimResults=false;
+recognition.onresult=function(e){
+var t=e.results[0][0].transcript.trim();
+searchBox.value=t;
+document.getElementById("voiceHint").innerHTML='<div class="voice-hint">听到："'+t+'"，正在查询…</div>';
+search();
+};
+recognition.onerror=function(e){
+isRecording=false;
+var b=document.getElementById("voiceBtn");
+b.classList.remove("recording");b.textContent="说话";
+if(e.error==="no-speech")document.getElementById("voiceHint").innerHTML='<div class="voice-hint">没听到声音，请再说一次</div>';
+else if(e.error==="not-allowed")document.getElementById("voiceHint").innerHTML='<div class="voice-hint">需允许麦克风权限</div>';
+else document.getElementById("voiceHint").innerHTML='<div class="voice-hint">语音出错，请打字搜索</div>';
+};
+recognition.onend=function(){
+isRecording=false;
+var b=document.getElementById("voiceBtn");
+b.classList.remove("recording");b.textContent="说话";
+};
+}else{
+document.getElementById("voiceBtn").style.display="none";
+}
+
+function toggleVoice(){
+if(!recognition)return;
+if(isRecording){
+recognition.stop();isRecording=false;
+document.getElementById("voiceBtn").classList.remove("recording");
+document.getElementById("voiceBtn").textContent="说话";
+}else{
+document.getElementById("voiceHint").innerHTML="";
+try{
+recognition.start();isRecording=true;
+document.getElementById("voiceBtn").classList.add("recording");
+document.getElementById("voiceBtn").textContent="正在听…";
+}catch(e){}
+}
+}
+
+function search(){
+var q=searchBox.value.trim().toLowerCase();
+var c=document.getElementById("content");
+if(!q){c.innerHTML='<div class="tip">输入物品名称查询</div>';return;}
+var results=[];
+for(var name in items){
+var info=items[name];
+var locs=info.locations||[];
+var aliases=info.aliases||[];
+var note=info.note||"";
+var fields=[name].concat(aliases,locs,[note]);
+if(fields.some(function(x){return String(x).toLowerCase().indexOf(q)>=0;}))
+results.push({name:name,locations:locs,note:note});
+}
+if(results.length===0){c.innerHTML='<div class="no-result">没有找到「'+searchBox.value+'」<br>家里可能还没登记哦</div>';return;}
+var html='<div class="result-count">找到'+results.length+'件：</div>';
+results.forEach(function(item){
+var ls=item.locations.map(function(l){return"<b>"+l+"</b>"}).join("；");
+html+='<div class="card"><div class="name">'+item.name+'</div><div class="loc">📍 '+ls+'</div>'+(item.note?'<div class="note">备注：'+item.note+'</div>':"")+'</div>';
+});
+c.innerHTML=html;
+}
+
+function addItem(){
+var name=document.getElementById("addName").value.trim();
+var loc=document.getElementById("addLoc").value;
+var note=document.getElementById("addNote").value.trim();
+if(!name){document.getElementById("addMsg").innerHTML='<span style="color:#e74c3c">请填写物品名称</span>';return;}
+document.getElementById("addBtn").disabled=true;
+document.getElementById("addBtn").textContent="正在添加…";
+if(items[name]){
+if(items[name].locations.indexOf(loc)<0)items[name].locations.push(loc);
+if(note&&!items[name].note)items[name].note=note;
+}else{
+items[name]={aliases:[],locations:[loc],note:note};
+}
+saveData({version:1,items:items}).then(function(){
+document.getElementById("addMsg").innerHTML='<span style="color:#27ae60">添加成功！</span>';
+document.getElementById("addName").value="";
+document.getElementById("addNote").value="";
+document.getElementById("addBtn").disabled=false;
+document.getElementById("addBtn").textContent="添加";
+}).catch(function(){
+document.getElementById("addMsg").innerHTML='<span style="color:#e74c3c">添加失败，请稍后重试</span>';
+document.getElementById("addBtn").disabled=false;
+document.getElementById("addBtn").textContent="添加";
+});
+}
+
+loadData();
+</script>
+</body>
+</html>
