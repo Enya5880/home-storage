@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "items": {
+    "纸巾": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第1层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "新辅食碗": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第1层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "新婴儿指甲钳套装": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第1层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "湿巾": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第1层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "棉柔巾": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第1层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "尿不湿": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第2层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "婴儿纸巾": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第2层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "新婴儿健身架": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第3层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    },
+    "露营睡袋": {
+      "aliases": [],
+      "locations": [
+        "客厅·柜1·第3层"
+      ],
+      "note": "",
+      "updated": "2026-09-29"
+    }
+  }
+}
