@@ -260,9 +260,7 @@ names.push(name+note);
 }
 var html='<div class="loc-detail">';
 html+='<h3>📍 '+(LOC_NAMES[loc]||loc)+' 里有 '+names.length+' 件：</h3>';
-if(photos[loc]){
-html+='<img class="loc-photo" src="'+photos[loc]+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';
-}
+photoImgs(loc).forEach(function(u){html+='<img class="loc-photo" src="'+u+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';});
 if(names.length===0){
 html+='<div class="item-line" style="color:#999">这个位置还没放东西哦</div>';
 }else{
@@ -374,6 +372,10 @@ html+='</div>';
 c.innerHTML=html;
 }
 
+function photoImgs(loc){
+if(!photos[loc])return [];
+return Array.isArray(photos[loc])?photos[loc]:[photos[loc]];
+}
 function showItemDetail(encName){
 var name=decodeURIComponent(encName);
 var info=items[name]||{};
@@ -386,8 +388,9 @@ html+='<div class="item-line" style="color:#999">还没登记位置</div>';
 }else{
 locs.forEach(function(l){
 html+='<div class="item-line">📍 <b>'+(LOC_NAMES[l]||l)+'</b></div>';
-if(photos[l]){
-html+='<img class="loc-photo" src="'+photos[l]+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';
+var imgs=photoImgs(l);
+if(imgs.length>0){
+imgs.forEach(function(u){html+='<img class="loc-photo" src="'+u+'" alt="位置照片" onclick="window.open(this.src)" style="cursor:pointer">';});
 }else{
 html+='<div class="photo-placeholder">（暂无位置照片）</div>';
 }
@@ -427,8 +430,9 @@ var html='<div class="result-count">找到'+results.length+'件：</div>';
 results.forEach(function(item){
 var ls=item.locations.map(function(l){return"<b>"+(LOC_NAMES[l]||l)+"</b>"}).join("；");
 var thumb="";
-if(item.locations.length>0&&photos[item.locations[0]]){
-thumb='<img class="search-thumb" src="'+photos[item.locations[0]]+'" alt="照片">';
+var thumbImgs=photoImgs(item.locations[0]);
+if(item.locations.length>0&&thumbImgs.length>0){
+thumb='<img class="search-thumb" src="'+thumbImgs[0]+'" alt="照片">';
 }
 html+='<div class="card"><div class="name">'+item.name+thumb+'</div><div class="loc">📍 '+ls+'</div>'+(item.note?'<div class="note">备注：'+item.note+'</div>':"")+'</div>';
 });
